@@ -70,7 +70,7 @@ if archivo is not None:
     # Mapeo flexible V1 y V2
     MAP = {
         "nombre":        ["Nombre del producto"],
-        "stock":         ["Stock actual"],
+        "stock":         ["Stock actual", "Stock actual (unidades)"],
         "ventas":        ["Ventas promedio semanal", "Ventas promedio semanal (unidades)"],
         "precio_venta":  ["Precio de venta unitario", "Precio de venta unitario (COP)"],
         "precio_compra": ["Precio de compra unitario", "Precio de compra unitario (COP)"],
