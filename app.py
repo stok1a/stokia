@@ -144,7 +144,7 @@ if archivo is not None:
                     semanas    = stock / ventas
                     dias_stock = semanas * 7
 
-                    if dias_stock < lead_time or semanas < 1:
+                    if (tiene_leadtime and dias_stock < lead_time) or semanas < 1:
                         uds = max(math.ceil((ventas * 2) - stock), 1)
                         urgentes.append({
                             "nombre": nombre, "stock": stock, "ventas": int(ventas),
