@@ -369,3 +369,4 @@ Exceso: {lista_exceso[:200]}""")
 
 else:
     st.info("👆 Sube tu archivo Excel para comenzar")
+       
