@@ -100,7 +100,7 @@ if archivo is not None:
             precio_venta  = float(row[col_pv] if col_pv else 0)
             precio_compra = float(row[col_pc] if col_pc else 0)
             proveedor     = str(row[col_prov] if col_prov else "Sin proveedor")
-            lead_time_raw = float(row[col_lt]) if col_lt and pd.notna(row[col_lt]) else 3
+            lead_time_raw = float(row[col_lt]) if col_lt and pd.notna(row[col_lt]) else 0
             lead_time     = int(lead_time_raw) if not math.isnan(lead_time_raw) else 3
             stock_min_raw = float(row[col_sm]) if col_sm and pd.notna(row[col_sm]) else 0
             filas.append({
