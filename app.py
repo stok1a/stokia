@@ -5,7 +5,7 @@ import math
 import io
 from datetime import datetime
 
-cliente = Groq(api_key="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")
+cliente = Groq(api_key=st.secrets["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"])
 
 st.set_page_config(page_title="StokIA", page_icon="📦", layout="centered")
 
