@@ -16,7 +16,7 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-archivo = st.file_uploader("Sube tu inventario en Excel", type=["xlsx"], help="Usa la plantilla StokIA V2")
+archivo = st.file_uploader("Sube tu inventario en Excel", type=["xlsx"], help="Compatible con plantilla StokIA V1 y V2")
 
 def pedir_ia(prompt):
     r = cliente.chat.completions.create(
@@ -53,63 +53,69 @@ def badge_abc(abc):
     tx = textos.get(abc, "#595959")
     return f'<span style="background:{bg};color:{tx};padding:2px 8px;border-radius:12px;font-size:11px;font-weight:600">{abc}</span>'
 
-def get_col_val(row, df, opciones):
+def encontrar_col(df, opciones):
+    """Busca el nombre de columna correcto entre varias opciones posibles."""
+    cols_norm = {c.strip().replace("\n", " "): c for c in df.columns}
     for op in opciones:
-        if op in df.columns:
-            val = row.get(op)
-            return val
+        op_norm = op.strip().replace("\n", " ")
+        if op_norm in cols_norm:
+            return cols_norm[op_norm]
     return None
+
 if archivo is not None:
     df_raw = pd.read_excel(archivo, sheet_name="Inventario", skiprows=2)
-    df_raw.columns = df_raw.columns.str.strip()
+    df_raw.columns = [str(c).strip().replace("\n", " ") for c in df_raw.columns]
     df_raw = df_raw.dropna(subset=["Nombre del producto"])
 
-    col_nombres_posibles = {
-        "ventas":        ["Ventas promedio semanal", "Ventas promedio\nsemanal (unidades)"],
-        "precio_venta":  ["Precio de venta unitario", "Precio de venta\nunitario (COP)"],
-        "precio_compra": ["Precio de compra unitario", "Precio de compra\nunitario (COP)"],
+    # Mapeo flexible V1 y V2
+    MAP = {
+        "nombre":        ["Nombre del producto"],
+        "stock":         ["Stock actual"],
+        "ventas":        ["Ventas promedio semanal", "Ventas promedio semanal (unidades)"],
+        "precio_venta":  ["Precio de venta unitario", "Precio de venta unitario (COP)"],
+        "precio_compra": ["Precio de compra unitario", "Precio de compra unitario (COP)"],
         "proveedor":     ["Proveedor preferido", "Proveedor"],
-        "lead_time":     ["Lead time (días entrega)", "Lead time\n(días entrega)"],
+        "lead_time":     ["Lead time (días entrega)", "Lead time (días entrega)"],
+        "stock_min":     ["Stock mínimo deseado"],
     }
 
-    def encontrar_col(df, opciones):
-        for op in opciones:
-            if op in df.columns:
-                return op
-        return None
+    col_ventas  = encontrar_col(df_raw, MAP["ventas"])
+    col_pv      = encontrar_col(df_raw, MAP["precio_venta"])
+    col_pc      = encontrar_col(df_raw, MAP["precio_compra"])
+    col_prov    = encontrar_col(df_raw, MAP["proveedor"])
+    col_lt      = encontrar_col(df_raw, MAP["lead_time"])
+    col_sm      = encontrar_col(df_raw, MAP["stock_min"])
 
-    col_ventas   = encontrar_col(df_raw, col_nombres_posibles["ventas"])
-    col_pv       = encontrar_col(df_raw, col_nombres_posibles["precio_venta"])
-    col_pc       = encontrar_col(df_raw, col_nombres_posibles["precio_compra"])
-    col_prov     = encontrar_col(df_raw, col_nombres_posibles["proveedor"])
-    col_lt       = encontrar_col(df_raw, col_nombres_posibles["lead_time"])
+    tiene_precios  = col_pc is not None and df_raw[col_pc].sum() > 0 if col_pc else False
+    tiene_leadtime = col_lt is not None
+    version = "V2" if tiene_leadtime else "V1"
 
     filas = []
     for _, row in df_raw.iterrows():
         try:
-            nombre = str(row.get("Nombre del producto", "")).strip()
-            if not nombre or nombre.lower() == "nan":
-                continue
+            nombre        = str(row.get("Nombre del producto", "")).strip()
+            if not nombre or nombre.lower() == "nan": continue
             stock         = float(row.get("Stock actual", 0) or 0)
             ventas        = float(row[col_ventas] if col_ventas else 0)
             precio_venta  = float(row[col_pv] if col_pv else 0)
             precio_compra = float(row[col_pc] if col_pc else 0)
             proveedor     = str(row[col_prov] if col_prov else "Sin proveedor")
-            lead_time     = float(row[col_lt] if col_lt else 3)
-            if pd.isna(lead_time): lead_time = 3
+            lead_time_raw = float(row[col_lt]) if col_lt and pd.notna(row[col_lt]) else 3
+            lead_time     = int(lead_time_raw) if not math.isnan(lead_time_raw) else 3
+            stock_min_raw = float(row[col_sm]) if col_sm and pd.notna(row[col_sm]) else 0
             filas.append({
                 "nombre": nombre, "stock": int(stock), "ventas": ventas,
                 "precio_venta": precio_venta, "precio_compra": precio_compra,
-                "proveedor": proveedor, "lead_time": int(lead_time)
+                "proveedor": proveedor, "lead_time": lead_time,
+                "stock_min_usuario": stock_min_raw
             })
         except:
             continue
 
     df = pd.DataFrame(filas)
-    tiene_precios  = df["precio_compra"].sum() > 0
-    tiene_leadtime = col_lt is not None
 
-    st.success(f"✅ {len(df)} productos cargados" + (" · Análisis avanzado activado ⭐" if tiene_precios else ""))
+    st.success(f"✅ {len(df)} productos cargados · Plantilla {version}" +
+               (" · Análisis avanzado activado ⭐" if tiene_precios else ""))
     with st.expander("Ver inventario completo"):
         st.dataframe(df_raw, use_container_width=True)
 
@@ -184,16 +190,36 @@ if archivo is not None:
         total_exceso = int(sum(p["valor"] for p in exceso))
 
         lista_urgentes = "\n".join([f"- {p['nombre']} (ABC:{p['abc']}, {p['semanas']} sem, lead {p['lead_time']}d)" for p in urgentes]) or "Ninguno."
-        lista_proximos = "\n".join([f"- {p['nombre']}: {p['semanas']} semanas" for p in proximos]) or "Ninguno."
+        lista_proximos = "\n".join([f"- {p['nombre']}: {p['semanas']} semanas de stock" for p in proximos]) or "Ninguno."
         lista_exceso   = "\n".join([f"- {p['nombre']}: {p['exceso_uds']} uds de más" for p in exceso]) or "Ninguno."
-        lista_normales = ", ".join([p["nombre"] for p in normales[:6]])
+        lista_normales = ", ".join([p["nombre"] for p in normales[:8]])
 
         with st.spinner("Analizando tu inventario..."):
-            intro_urgentes = pedir_ia(f"Eres StokIA. Tono cercano, segunda persona. Máximo 2 oraciones. Explica por qué estos productos son críticos considerando su ABC y lead time. Sin listas ni números.\nProductos: {lista_urgentes}")
-            intro_sem2     = pedir_ia(f"Eres StokIA. Tono cercano, segunda persona. Máximo 2 oraciones. Qué reponer en Semana 2. Sin listas ni números.\nPróximos: {lista_proximos}\nNormales: {lista_normales}")
-            intro_sem3     = pedir_ia("Eres StokIA. Tono cercano, segunda persona. Máximo 2 oraciones. Qué revisar antes de comprar en Semana 3.")
-            intro_exceso   = pedir_ia(f"Eres StokIA. Tono cercano, segunda persona. Máximo 2 oraciones. Qué hacer con el exceso para liberar capital. Sin listas ni números.\nProductos: {lista_exceso}")
-            consejo        = pedir_ia(f"Eres StokIA. Tono cercano, segunda persona. UNA sugerencia concreta y accionable para esta semana. Máximo 2 oraciones.\nUrgentes: {lista_urgentes[:200]}\nExceso: {lista_exceso[:200]}")
+            intro_urgentes = pedir_ia(f"""Eres StokIA. Tono cercano, directo, segunda persona. Máximo 2 oraciones.
+Explica por qué estos productos son críticos considerando su categoría ABC y lead time del proveedor. Sin listas ni números.
+Productos: {lista_urgentes}""")
+
+            intro_sem2 = pedir_ia(f"""Eres StokIA. Tono cercano, directo, segunda persona. Máximo 2 oraciones.
+Explica qué reponer en Semana 2 basándote EXACTAMENTE en estos productos específicos del negocio.
+Menciona productos concretos por nombre. Sin números de cantidades ni precios.
+Productos próximos a agotarse: {lista_proximos}
+Productos de rotación normal para reponer: {lista_normales}""")
+
+            intro_sem3 = pedir_ia(f"""Eres StokIA. Tono cercano, directo, segunda persona. Máximo 2 oraciones.
+Da un consejo concreto de qué revisar en Semana 3 basado en el comportamiento real de este inventario.
+Considera que hubo productos urgentes y capital atrapado. Sé específico, no genérico.
+Urgentes: {lista_urgentes[:150]}
+Capital atrapado: {lista_exceso[:150]}""")
+
+            intro_exceso = pedir_ia(f"""Eres StokIA. Tono cercano, directo, segunda persona. Máximo 2 oraciones.
+Explica brevemente qué hacer con el exceso para liberar capital. Sin listas ni números.
+Productos en exceso: {lista_exceso}""")
+
+            consejo = pedir_ia(f"""Eres StokIA. Tono cercano, directo, segunda persona.
+Una sugerencia concreta y accionable para mejorar ventas o flujo de caja esta semana.
+Específica para este inventario. Máximo 2 oraciones.
+Urgentes: {lista_urgentes[:200]}
+Exceso: {lista_exceso[:200]}""")
 
         # ── REPORTE ──────────────────────────────────────────
         fecha = datetime.now().strftime("%d/%m/%Y %H:%M")
@@ -288,7 +314,7 @@ if archivo is not None:
         output = io.BytesIO()
         with pd.ExcelWriter(output, engine="openpyxl") as writer:
             if urgentes:
-                pd.DataFrame([{"Producto": p["nombre"], "ABC": p["abc"], "Stock actual": p["stock"],
+                pd.DataFrame([{"Producto": p["nombre"], "ABC": p["abc"], "Stock": p["stock"],
                     "Ventas/sem": p["ventas"], "Lead time días": p["lead_time"],
                     "Stock mín. sugerido": p["stock_min"], "Uds a comprar": p["uds"],
                     "Costo total COP": int(p["costo_total"]) if p["costo_total"]>0 else "-",
@@ -297,9 +323,11 @@ if archivo is not None:
                     "Proveedor": p["proveedor"]} for p in urgentes]).to_excel(writer, sheet_name="🚨 Urgentes", index=False)
 
             plan = [{"Semana": 1, "Producto": p["nombre"], "ABC": p["abc"], "Uds": p["uds"],
-                     "Costo COP": int(p["costo_total"]) if p["costo_total"]>0 else "-", "Proveedor": p["proveedor"]} for p in urgentes]
+                     "Costo COP": int(p["costo_total"]) if p["costo_total"]>0 else "-",
+                     "Proveedor": p["proveedor"]} for p in urgentes]
             plan += [{"Semana": 2, "Producto": p["nombre"], "ABC": p["abc"], "Uds": p["uds"],
-                      "Costo COP": int(p["costo_total"]) if p["costo_total"]>0 else "-", "Proveedor": p["proveedor"]} for p in proximos]
+                      "Costo COP": int(p["costo_total"]) if p["costo_total"]>0 else "-",
+                      "Proveedor": p["proveedor"]} for p in proximos]
             if plan:
                 pd.DataFrame(plan).to_excel(writer, sheet_name="📅 Plan compras", index=False)
 
@@ -312,10 +340,12 @@ if archivo is not None:
             if ranking and tiene_precios:
                 pd.DataFrame([{"Prioridad": i+1, "Producto": p["nombre"], "ABC": p["abc"],
                     "ROI %": p["roi"], "Margen unit. COP": p["margen"], "Uds": p["uds"],
-                    "Inversión COP": int(p["costo_total"]), "Ganancia potencial COP": p["ganancia_potencial"],
+                    "Inversión COP": int(p["costo_total"]),
+                    "Ganancia potencial COP": p["ganancia_potencial"],
                     "Proveedor": p["proveedor"]} for i, p in enumerate(ranking)]).to_excel(writer, sheet_name="📈 Ranking ROI", index=False)
 
-            abc_data = [{"Producto": n, "ABC": c, "Ventas/sem": int(df[df["nombre"]==n]["ventas"].iloc[0]),
+            abc_data = [{"Producto": n, "ABC": c,
+                "Ventas/sem": int(df[df["nombre"]==n]["ventas"].iloc[0]),
                 "Precio venta COP": int(df[df["nombre"]==n]["precio_venta"].iloc[0]),
                 "Ingreso semanal COP": int(df[df["nombre"]==n]["ventas"].iloc[0] * df[df["nombre"]==n]["precio_venta"].iloc[0])}
                 for n, c in abc_map.items() if len(df[df["nombre"]==n]) > 0]
