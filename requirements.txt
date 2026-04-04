@@ -3,3 +3,4 @@ pandas
 groq
 openpyxl
 # v2.1
+plotly

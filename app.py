@@ -240,6 +240,85 @@ Exceso: {lista_exceso[:200]}""")
         cb.markdown(f'<div style="background:#FFEB9C;border-radius:10px;padding:12px 16px;text-align:center"><div style="font-size:24px;font-weight:700;color:#9C5700">{conteo["B"]}</div><div style="font-size:12px;color:#9C5700;font-weight:600">Productos B</div><div style="font-size:11px;color:#9C5700">Rotación media · Importantes</div></div>', unsafe_allow_html=True)
         cc.markdown(f'<div style="background:#FFCCCC;border-radius:10px;padding:12px 16px;text-align:center"><div style="font-size:24px;font-weight:700;color:#9C0006">{conteo["C"]}</div><div style="font-size:12px;color:#9C0006;font-weight:600">Productos C</div><div style="font-size:11px;color:#9C0006">Bajo impacto · Stock mínimo</div></div>', unsafe_allow_html=True)
 
+# GRÁFICOS ABC Y ROI
+        st.divider()
+        st.markdown("### 📊 Gráficos de tu inventario")
+
+        import plotly.express as px
+        import plotly.graph_objects as go
+
+        # Gráfico ABC
+        if len(df_abc) > 0:
+            df_graf = df_abc.copy()
+            df_graf["ingreso_semanal"] = df_graf["ventas"] * df_graf["precio_venta"]
+            df_graf = df_graf.sort_values("ingreso_semanal", ascending=True)
+            df_graf["ingreso_miles"] = (df_graf["ingreso_semanal"] / 1000).round(1)
+
+            colores_abc = {"A": "#639922", "B": "#BA7517", "C": "#E24B4A"}
+            df_graf["color"] = df_graf["abc"].map(colores_abc)
+
+            fig_abc = go.Figure(go.Bar(
+                x=df_graf["ingreso_miles"],
+                y=df_graf["nombre"],
+                orientation="h",
+                marker_color=df_graf["color"],
+                text=df_graf["abc"],
+                textposition="inside",
+                hovertemplate="<b>%{y}</b><br>Ingreso: $%{x}K COP/sem<br>Categoría: %{text}<extra></extra>"
+            ))
+            fig_abc.update_layout(
+                height=max(300, len(df_graf) * 28),
+                margin=dict(l=0, r=20, t=10, b=30),
+                xaxis_title="Ingreso semanal (miles COP)",
+                yaxis_title="",
+                plot_bgcolor="rgba(0,0,0,0)",
+                paper_bgcolor="rgba(0,0,0,0)",
+                font=dict(size=11),
+                showlegend=False
+            )
+            fig_abc.update_xaxes(gridcolor="rgba(136,135,128,0.2)")
+            fig_abc.update_yaxes(gridcolor="rgba(0,0,0,0)")
+
+            st.markdown("**Ingreso semanal por producto — clasificación ABC**")
+            col_leg1, col_leg2, col_leg3 = st.columns(3)
+            col_leg1.markdown('<span style="background:#C6EFCE;color:#276221;padding:2px 10px;border-radius:8px;font-size:12px">■ A — 80% del ingreso</span>', unsafe_allow_html=True)
+            col_leg2.markdown('<span style="background:#FFEB9C;color:#9C5700;padding:2px 10px;border-radius:8px;font-size:12px">■ B — 15% del ingreso</span>', unsafe_allow_html=True)
+            col_leg3.markdown('<span style="background:#FFCCCC;color:#9C0006;padding:2px 10px;border-radius:8px;font-size:12px">■ C — 5% del ingreso</span>', unsafe_allow_html=True)
+            st.plotly_chart(fig_abc, use_container_width=True)
+
+        # Gráfico ROI
+        if tiene_precios and len(df_abc) > 0:
+            df_roi = df_abc.copy()
+            df_roi = df_roi[df_roi["precio_compra"] > 0].copy()
+            df_roi["roi"] = ((df_roi["precio_venta"] - df_roi["precio_compra"]) / df_roi["precio_compra"] * 100).round(0).astype(int)
+            df_roi = df_roi.sort_values("roi", ascending=True)
+            df_roi["color"] = df_roi["abc"].map({"A": "#639922", "B": "#BA7517", "C": "#E24B4A"})
+
+            fig_roi = go.Figure(go.Bar(
+                x=df_roi["roi"],
+                y=df_roi["nombre"],
+                orientation="h",
+                marker_color=df_roi["color"],
+                text=df_roi["roi"].astype(str) + "%",
+                textposition="inside",
+                hovertemplate="<b>%{y}</b><br>ROI: %{x}%<extra></extra>"
+            ))
+            fig_roi.update_layout(
+                height=max(300, len(df_roi) * 28),
+                margin=dict(l=0, r=20, t=10, b=30),
+                xaxis_title="ROI (%)",
+                yaxis_title="",
+                plot_bgcolor="rgba(0,0,0,0)",
+                paper_bgcolor="rgba(0,0,0,0)",
+                font=dict(size=11),
+                showlegend=False
+            )
+            fig_roi.update_xaxes(gridcolor="rgba(136,135,128,0.2)", ticksuffix="%")
+            fig_roi.update_yaxes(gridcolor="rgba(0,0,0,0)")
+
+            st.markdown("**Ranking de rentabilidad por producto (ROI)**")
+            st.plotly_chart(fig_roi, use_container_width=True)
+
         # ALERTAS URGENTES
         st.divider()
         st.markdown("### 🚨 Alertas urgentes — compra hoy")
