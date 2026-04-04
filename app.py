@@ -140,9 +140,9 @@ if archivo is not None:
     if st.button("🔍 Analizar con IA", type="primary", use_container_width=True):
 
         if "ventas" not in df.columns or len(df) == 0:
-    st.error("No se pudieron leer los datos del archivo. Verifica que usas la plantilla StokIA correcta.")
-    st.stop()
-df_abc = calcular_abc(df[df["ventas"] > 0].copy())
+            st.error("No se pudieron leer los datos del archivo. Verifica que usas la plantilla StokIA correcta.")
+            st.stop()
+        df_abc = calcular_abc(df[df["ventas"] > 0].copy())
         abc_map = dict(zip(df_abc["nombre"], df_abc["abc"])) if len(df_abc) > 0 else {}
 
         urgentes, proximos, exceso, normales = [], [], [], []
