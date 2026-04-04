@@ -12,7 +12,7 @@ st.set_page_config(page_title="StokIA", page_icon="📦", layout="centered")
 st.markdown("""
 <div style="background:#1F4E79;padding:20px 24px;border-radius:12px;margin-bottom:24px">
     <h1 style="color:white;margin:0;font-size:28px">📦 StokIA</h1>
-    <p style="color:#BDD7EE;margin:6px 0 0 0;font-size:15px">Compras inteligentes para tu negocio</p>
+    <p style="color:#BDD7EE;margin:6px 0 0 0;font-size:15px">Convierte tu experiencia en decisiones rentables</p>
 </div>
 """, unsafe_allow_html=True)
 
