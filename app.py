@@ -125,6 +125,18 @@ if archivo is not None:
     with st.expander("Ver inventario completo"):
         st.dataframe(df_raw, use_container_width=True)
 
+    # Modo presupuesto
+    st.divider()
+    col_pres, col_check = st.columns([3, 1])
+    with col_pres:
+        presupuesto = st.number_input(
+            "💰 ¿Cuánto tienes disponible hoy para comprar? (COP)",
+            min_value=0, value=0, step=10000,
+            help="Opcional — si lo dejas en 0 StokIA muestra el plan completo"
+        )
+    with col_check:
+        usar_presupuesto = presupuesto > 0
+
     if st.button("🔍 Analizar con IA", type="primary", use_container_width=True):
 
         df_abc = calcular_abc(df[df["ventas"] > 0].copy())
@@ -341,8 +353,40 @@ Exceso: {lista_exceso[:200]}""")
   <div style="font-size:11px;color:#595959;margin-top:4px">Proveedor: {p['proveedor']} · Stock: {p['stock']} · Vende {p['ventas']}/sem · {p['semanas']} sem restantes</div>
 </div>""", unsafe_allow_html=True)
 
-        if total_sem1 > 0:
-            st.info(f"💵 **TOTAL A INVERTIR HOY: ${total_sem1:,} COP**")
+        if usar_presupuesto:
+            st.divider()
+            st.markdown("### 💰 ¿Qué comprar hoy con tu presupuesto?")
+            acum_pres = 0
+            compras_hoy = []
+            for p in urgentes:
+                if p["costo_total"] > 0:
+                    if acum_pres + p["costo_total"] <= presupuesto:
+                        acum_pres += p["costo_total"]
+                        compras_hoy.append(p)
+                    else:
+                        uds_posibles = int((presupuesto - acum_pres) / (p["costo_total"] / p["uds"])) if p["uds"] > 0 else 0
+                        if uds_posibles > 0:
+                            costo_parcial = uds_posibles * (p["costo_total"] / p["uds"])
+                            acum_pres += costo_parcial
+                            compras_hoy.append({**p, "uds": uds_posibles, "costo_total": costo_parcial})
+                        break
+
+            st.markdown(f"**Con ${presupuesto:,} COP puedes comprar:**")
+            for p in compras_hoy:
+                st.markdown(f"- {badge_abc(p['abc'])} **{p['nombre']}** · {p['uds']} uds · ${int(p['costo_total']):,} COP · {p['proveedor']}", unsafe_allow_html=True)
+
+            restante = presupuesto - acum_pres
+            if restante > 0 and len(compras_hoy) < len(urgentes):
+                st.info(f"✅ Usas **${int(acum_pres):,} COP** de tu presupuesto · Te sobran **${int(restante):,} COP**")
+            elif restante <= 0:
+                st.warning(f"⚠️ Con **${presupuesto:,} COP** no alcanza para todos los urgentes — comprando los más importantes primero.")
+
+            productos_sin_precio = [p for p in urgentes if p["costo_total"] == 0]
+            if productos_sin_precio:
+                st.caption(f"💡 {len(productos_sin_precio)} productos urgentes sin precio de compra registrado — agrégalo en la plantilla para incluirlos aquí.")
+        else:
+            if total_sem1 > 0:
+                st.info(f"💵 **TOTAL A INVERTIR HOY: ${total_sem1:,} COP**")
 
         if urgentes and tiene_precios:
             with st.expander("💡 ¿No alcanza el presupuesto? Compra en este orden"):
