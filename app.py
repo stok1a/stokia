@@ -4,6 +4,7 @@ from groq import Groq
 import math
 import io
 from datetime import datetime
+import plotly.graph_objects as go
 
 cliente = Groq(api_key=st.secrets["GROQ_API_KEY"])
 
@@ -16,7 +17,6 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# Control de acceso
 password = st.text_input("Ingresa tu contraseña de acceso", type="password")
 if password != st.secrets["APP_PASSWORD"]:
     st.warning("Contraseña incorrecta. Contacta a edgar@stokia.app para acceder.")
@@ -60,7 +60,6 @@ def badge_abc(abc):
     return f'<span style="background:{bg};color:{tx};padding:2px 8px;border-radius:12px;font-size:11px;font-weight:600">{abc}</span>'
 
 def encontrar_col(df, opciones):
-    """Busca el nombre de columna correcto entre varias opciones posibles."""
     cols_norm = {c.strip().replace("\n", " "): c for c in df.columns}
     for op in opciones:
         op_norm = op.strip().replace("\n", " ")
@@ -73,33 +72,32 @@ if archivo is not None:
     df_raw.columns = [str(c).strip().replace("\n", " ") for c in df_raw.columns]
     df_raw = df_raw.dropna(subset=["Nombre del producto"])
 
-    # Mapeo flexible V1 y V2
     MAP = {
-        "nombre":        ["Nombre del producto"],
         "stock":         ["Stock actual", "Stock actual (unidades)"],
         "ventas":        ["Ventas promedio semanal", "Ventas promedio semanal (unidades)"],
         "precio_venta":  ["Precio de venta unitario", "Precio de venta unitario (COP)"],
         "precio_compra": ["Precio de compra unitario", "Precio de compra unitario (COP)"],
         "proveedor":     ["Proveedor preferido", "Proveedor"],
-        "lead_time":     ["Lead time (días entrega)", "Lead time (días entrega)"],
+        "lead_time":     ["Lead time (días entrega)"],
         "stock_min":     ["Stock mínimo deseado"],
     }
 
-    col_ventas  = encontrar_col(df_raw, MAP["ventas"])
-    col_pv      = encontrar_col(df_raw, MAP["precio_venta"])
-    col_pc      = encontrar_col(df_raw, MAP["precio_compra"])
-    col_prov    = encontrar_col(df_raw, MAP["proveedor"])
-    col_lt      = encontrar_col(df_raw, MAP["lead_time"])
-    col_sm      = encontrar_col(df_raw, MAP["stock_min"])
+    col_stock  = encontrar_col(df_raw, MAP["stock"])
+    col_ventas = encontrar_col(df_raw, MAP["ventas"])
+    col_pv     = encontrar_col(df_raw, MAP["precio_venta"])
+    col_pc     = encontrar_col(df_raw, MAP["precio_compra"])
+    col_prov   = encontrar_col(df_raw, MAP["proveedor"])
+    col_lt     = encontrar_col(df_raw, MAP["lead_time"])
+    col_sm     = encontrar_col(df_raw, MAP["stock_min"])
 
-    tiene_precios  = col_pc is not None and df_raw[col_pc].sum() > 0 if col_pc else False
+    tiene_precios  = (col_pc is not None) and (pd.to_numeric(df_raw[col_pc], errors="coerce").sum() > 0)
     tiene_leadtime = col_lt is not None
     version = "V2" if tiene_leadtime else "V1"
 
     filas = []
     for _, row in df_raw.iterrows():
         try:
-            nombre        = str(row.get("Nombre del producto", "")).strip()
+            nombre = str(row.get("Nombre del producto", "")).strip()
             if not nombre or nombre.lower() == "nan": continue
             stock         = float(row[col_stock] if col_stock else 0)
             ventas        = float(row[col_ventas] if col_ventas else 0)
@@ -120,31 +118,27 @@ if archivo is not None:
 
     df = pd.DataFrame(filas)
 
-    st.write(f"DEBUG col_stock: {col_stock}")
-    st.write(f"DEBUG col_ventas: {col_ventas}")
-    st.write(f"DEBUG filas: {len(filas)}")
-        st.success(f"✅ {len(df)} productos cargados · Plantilla {version}" +
+    st.success(f"✅ {len(df)} productos cargados · Plantilla {version}" +
                (" · Análisis avanzado activado ⭐" if tiene_precios else ""))
     with st.expander("Ver inventario completo"):
         st.dataframe(df_raw, use_container_width=True)
 
-    # Modo presupuesto
     st.divider()
-    col_pres, col_check = st.columns([3, 1])
+    col_pres, _ = st.columns([3, 1])
     with col_pres:
         presupuesto = st.number_input(
             "💰 ¿Cuánto tienes disponible hoy para comprar? (COP)",
             min_value=0, value=0, step=10000,
             help="Opcional — si lo dejas en 0 StokIA muestra el plan completo"
         )
-    with col_check:
-        usar_presupuesto = presupuesto > 0
+    usar_presupuesto = presupuesto > 0
 
     if st.button("🔍 Analizar con IA", type="primary", use_container_width=True):
 
-        if "ventas" not in df.columns or len(df) == 0:
+        if len(df) == 0:
             st.error("No se pudieron leer los datos del archivo. Verifica que usas la plantilla StokIA correcta.")
             st.stop()
+
         df_abc = calcular_abc(df[df["ventas"] > 0].copy())
         abc_map = dict(zip(df_abc["nombre"], df_abc["abc"])) if len(df_abc) > 0 else {}
 
@@ -152,17 +146,17 @@ if archivo is not None:
 
         for _, row in df.iterrows():
             try:
-                nombre        = row["nombre"]
-                stock         = row["stock"]
-                ventas        = row["ventas"]
-                costo         = row["precio_compra"]
-                pv            = row["precio_venta"]
-                proveedor     = row["proveedor"]
-                lead_time     = row["lead_time"]
-                abc           = abc_map.get(nombre, "C")
-                margen        = pv - costo if costo > 0 else 0
-                roi           = round(margen / costo * 100) if costo > 0 else 0
-                stock_min     = stock_minimo_sugerido(ventas, lead_time, abc)
+                nombre    = row["nombre"]
+                stock     = row["stock"]
+                ventas    = row["ventas"]
+                costo     = row["precio_compra"]
+                pv        = row["precio_venta"]
+                proveedor = row["proveedor"]
+                lead_time = row["lead_time"]
+                abc       = abc_map.get(nombre, "C")
+                margen    = pv - costo if costo > 0 else 0
+                roi       = round(margen / costo * 100) if costo > 0 else 0
+                stock_min = stock_minimo_sugerido(ventas, lead_time, abc)
 
                 if ventas > 0:
                     semanas    = stock / ventas
@@ -222,30 +216,25 @@ if archivo is not None:
             intro_urgentes = pedir_ia(f"""Eres StokIA. Tono cercano, directo, segunda persona. Máximo 2 oraciones.
 Explica por qué estos productos son críticos considerando su categoría ABC y lead time del proveedor. Sin listas ni números.
 Productos: {lista_urgentes}""")
-
             intro_sem2 = pedir_ia(f"""Eres StokIA. Tono cercano, directo, segunda persona. Máximo 2 oraciones.
 Explica qué reponer en Semana 2 basándote EXACTAMENTE en estos productos específicos del negocio.
 Menciona productos concretos por nombre. Sin números de cantidades ni precios.
 Productos próximos a agotarse: {lista_proximos}
 Productos de rotación normal para reponer: {lista_normales}""")
-
             intro_sem3 = pedir_ia(f"""Eres StokIA. Tono cercano, directo, segunda persona. Máximo 2 oraciones.
 Da un consejo concreto de qué revisar en Semana 3 basado en el comportamiento real de este inventario.
 Considera que hubo productos urgentes y capital atrapado. Sé específico, no genérico.
 Urgentes: {lista_urgentes[:150]}
 Capital atrapado: {lista_exceso[:150]}""")
-
             intro_exceso = pedir_ia(f"""Eres StokIA. Tono cercano, directo, segunda persona. Máximo 2 oraciones.
 Explica brevemente qué hacer con el exceso para liberar capital. Sin listas ni números.
 Productos en exceso: {lista_exceso}""")
-
             consejo = pedir_ia(f"""Eres StokIA. Tono cercano, directo, segunda persona.
 Una sugerencia concreta y accionable para mejorar ventas o flujo de caja esta semana.
 Específica para este inventario. Máximo 2 oraciones.
 Urgentes: {lista_urgentes[:200]}
 Exceso: {lista_exceso[:200]}""")
 
-        # ── REPORTE ──────────────────────────────────────────
         fecha = datetime.now().strftime("%d/%m/%Y %H:%M")
         st.markdown(f"---\n### 📊 Reporte StokIA — {fecha}")
 
@@ -254,7 +243,6 @@ Exceso: {lista_exceso[:200]}""")
         col2.metric("📅 Semana 2", f"${total_sem2:,}" if total_sem2 > 0 else "—", f"{len(proximos)} a reponer")
         col3.metric("💰 Capital atrapado", f"${total_exceso:,}" if total_exceso > 0 else "—", f"{len(exceso)} productos")
 
-        # ABC
         st.divider()
         st.markdown("### 📊 Clasificación ABC de tu inventario")
         conteo = {"A": 0, "B": 0, "C": 0}
@@ -264,45 +252,30 @@ Exceso: {lista_exceso[:200]}""")
         cb.markdown(f'<div style="background:#FFEB9C;border-radius:10px;padding:12px 16px;text-align:center"><div style="font-size:24px;font-weight:700;color:#9C5700">{conteo["B"]}</div><div style="font-size:12px;color:#9C5700;font-weight:600">Productos B</div><div style="font-size:11px;color:#9C5700">Rotación media · Importantes</div></div>', unsafe_allow_html=True)
         cc.markdown(f'<div style="background:#FFCCCC;border-radius:10px;padding:12px 16px;text-align:center"><div style="font-size:24px;font-weight:700;color:#9C0006">{conteo["C"]}</div><div style="font-size:12px;color:#9C0006;font-weight:600">Productos C</div><div style="font-size:11px;color:#9C0006">Bajo impacto · Stock mínimo</div></div>', unsafe_allow_html=True)
 
-# GRÁFICOS ABC Y ROI
         st.divider()
         st.markdown("### 📊 Gráficos de tu inventario")
 
-        import plotly.express as px
-        import plotly.graph_objects as go
-
-        # Gráfico ABC
         if len(df_abc) > 0:
             df_graf = df_abc.copy()
             df_graf["ingreso_semanal"] = df_graf["ventas"] * df_graf["precio_venta"]
             df_graf = df_graf.sort_values("ingreso_semanal", ascending=True)
             df_graf["ingreso_miles"] = (df_graf["ingreso_semanal"] / 1000).round(1)
-
             colores_abc = {"A": "#639922", "B": "#BA7517", "C": "#E24B4A"}
             df_graf["color"] = df_graf["abc"].map(colores_abc)
 
             fig_abc = go.Figure(go.Bar(
-                x=df_graf["ingreso_miles"],
-                y=df_graf["nombre"],
-                orientation="h",
-                marker_color=df_graf["color"],
-                text=df_graf["abc"],
-                textposition="inside",
+                x=df_graf["ingreso_miles"], y=df_graf["nombre"], orientation="h",
+                marker_color=df_graf["color"], text=df_graf["abc"], textposition="inside",
                 hovertemplate="<b>%{y}</b><br>Ingreso: $%{x}K COP/sem<br>Categoría: %{text}<extra></extra>"
             ))
             fig_abc.update_layout(
-                height=max(300, len(df_graf) * 28),
-                margin=dict(l=0, r=20, t=10, b=30),
-                xaxis_title="Ingreso semanal (miles COP)",
-                yaxis_title="",
-                plot_bgcolor="rgba(0,0,0,0)",
-                paper_bgcolor="rgba(0,0,0,0)",
-                font=dict(size=11),
-                showlegend=False
+                height=max(300, len(df_graf) * 28), margin=dict(l=0, r=20, t=10, b=30),
+                xaxis_title="Ingreso semanal (miles COP)", yaxis_title="",
+                plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)",
+                font=dict(size=11), showlegend=False
             )
             fig_abc.update_xaxes(gridcolor="rgba(136,135,128,0.2)")
             fig_abc.update_yaxes(gridcolor="rgba(0,0,0,0)")
-
             st.markdown("**Ingreso semanal por producto — clasificación ABC**")
             col_leg1, col_leg2, col_leg3 = st.columns(3)
             col_leg1.markdown('<span style="background:#C6EFCE;color:#276221;padding:2px 10px;border-radius:8px;font-size:12px">■ A — 80% del ingreso</span>', unsafe_allow_html=True)
@@ -310,40 +283,27 @@ Exceso: {lista_exceso[:200]}""")
             col_leg3.markdown('<span style="background:#FFCCCC;color:#9C0006;padding:2px 10px;border-radius:8px;font-size:12px">■ C — 5% del ingreso</span>', unsafe_allow_html=True)
             st.plotly_chart(fig_abc, use_container_width=True)
 
-        # Gráfico ROI
         if tiene_precios and len(df_abc) > 0:
-            df_roi = df_abc.copy()
-            df_roi = df_roi[df_roi["precio_compra"] > 0].copy()
+            df_roi = df_abc[df_abc["precio_compra"] > 0].copy()
             df_roi["roi"] = ((df_roi["precio_venta"] - df_roi["precio_compra"]) / df_roi["precio_compra"] * 100).round(0).astype(int)
             df_roi = df_roi.sort_values("roi", ascending=True)
             df_roi["color"] = df_roi["abc"].map({"A": "#639922", "B": "#BA7517", "C": "#E24B4A"})
-
             fig_roi = go.Figure(go.Bar(
-                x=df_roi["roi"],
-                y=df_roi["nombre"],
-                orientation="h",
-                marker_color=df_roi["color"],
-                text=df_roi["roi"].astype(str) + "%",
-                textposition="inside",
-                hovertemplate="<b>%{y}</b><br>ROI: %{x}%<extra></extra>"
+                x=df_roi["roi"], y=df_roi["nombre"], orientation="h",
+                marker_color=df_roi["color"], text=df_roi["roi"].astype(str) + "%",
+                textposition="inside", hovertemplate="<b>%{y}</b><br>ROI: %{x}%<extra></extra>"
             ))
             fig_roi.update_layout(
-                height=max(300, len(df_roi) * 28),
-                margin=dict(l=0, r=20, t=10, b=30),
-                xaxis_title="ROI (%)",
-                yaxis_title="",
-                plot_bgcolor="rgba(0,0,0,0)",
-                paper_bgcolor="rgba(0,0,0,0)",
-                font=dict(size=11),
-                showlegend=False
+                height=max(300, len(df_roi) * 28), margin=dict(l=0, r=20, t=10, b=30),
+                xaxis_title="ROI (%)", yaxis_title="",
+                plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)",
+                font=dict(size=11), showlegend=False
             )
             fig_roi.update_xaxes(gridcolor="rgba(136,135,128,0.2)", ticksuffix="%")
             fig_roi.update_yaxes(gridcolor="rgba(0,0,0,0)")
-
             st.markdown("**Ranking de rentabilidad por producto (ROI)**")
             st.plotly_chart(fig_roi, use_container_width=True)
 
-        # ALERTAS URGENTES
         st.divider()
         st.markdown("### 🚨 Alertas urgentes — compra hoy")
         st.markdown(intro_urgentes)
@@ -376,20 +336,17 @@ Exceso: {lista_exceso[:200]}""")
                             acum_pres += costo_parcial
                             compras_hoy.append({**p, "uds": uds_posibles, "costo_total": costo_parcial})
                         break
-
             st.markdown(f"**Con ${presupuesto:,} COP puedes comprar:**")
             for p in compras_hoy:
                 st.markdown(f"- {badge_abc(p['abc'])} **{p['nombre']}** · {p['uds']} uds · ${int(p['costo_total']):,} COP · {p['proveedor']}", unsafe_allow_html=True)
-
             restante = presupuesto - acum_pres
             if restante > 0 and len(compras_hoy) < len(urgentes):
                 st.info(f"✅ Usas **${int(acum_pres):,} COP** de tu presupuesto · Te sobran **${int(restante):,} COP**")
             elif restante <= 0:
                 st.warning(f"⚠️ Con **${presupuesto:,} COP** no alcanza para todos los urgentes — comprando los más importantes primero.")
-
             productos_sin_precio = [p for p in urgentes if p["costo_total"] == 0]
             if productos_sin_precio:
-                st.caption(f"💡 {len(productos_sin_precio)} productos urgentes sin precio de compra registrado — agrégalo en la plantilla para incluirlos aquí.")
+                st.caption(f"💡 {len(productos_sin_precio)} productos urgentes sin precio de compra — agrégalo en la plantilla para incluirlos aquí.")
         else:
             if total_sem1 > 0:
                 st.info(f"💵 **TOTAL A INVERTIR HOY: ${total_sem1:,} COP**")
@@ -403,27 +360,22 @@ Exceso: {lista_exceso[:200]}""")
                     st.markdown(f"**{i+1}.** {p['nombre']} {badge_abc(p['abc'])} · ROI: **{p['roi']}%** · Ganancia potencial: **${p['ganancia_potencial']:,} COP** · Inversión acumulada: **${int(acumulado):,} COP**", unsafe_allow_html=True)
                     st.progress(min(p["roi"], 100) / 100)
 
-        # PLAN DE COMPRAS
         st.divider()
         st.markdown("### 📅 Plan de compras — 3 semanas")
         cs1, cs2, cs3 = st.columns(3)
         cs1.metric("Semana 1", f"${total_sem1:,} COP" if total_sem1 > 0 else "Ver arriba")
         cs2.metric("Semana 2", f"${total_sem2:,} COP" if total_sem2 > 0 else "—")
         cs3.metric("Semana 3", f"${total_sem3:,} COP" if total_sem3 > 0 else "—")
-
         st.markdown("**📦 Semana 1 — Urgente**")
         for p in urgentes:
             st.markdown(f"- {badge_abc(p['abc'])} **{p['nombre']}** · {p['uds']} uds · {p['proveedor']}" + (f" · ${int(p['costo_total']):,} COP" if p['costo_total'] > 0 else ""), unsafe_allow_html=True)
-
         st.markdown("**📦 Semana 2 — Reposición**")
         st.markdown(intro_sem2)
         for p in proximos:
             st.markdown(f"- {badge_abc(p['abc'])} **{p['nombre']}** · {p['semanas']} sem · {p['uds']} uds" + (f" · ${int(p['costo_total']):,} COP" if p['costo_total'] > 0 else ""), unsafe_allow_html=True)
-
         st.markdown("**📦 Semana 3 — Ajuste**")
         st.markdown(intro_sem3)
 
-        # CAPITAL ATRAPADO
         st.divider()
         st.markdown("### 💰 Capital atrapado")
         st.markdown(intro_exceso)
@@ -438,12 +390,10 @@ Exceso: {lista_exceso[:200]}""")
         if total_exceso > 0:
             st.warning(f"🔒 **TOTAL CAPITAL ATRAPADO: ${total_exceso:,} COP**")
 
-        # CONSEJO
         st.divider()
         st.markdown("### 💡 Consejo de tu socio StokIA")
         st.success(consejo)
 
-        # DESCARGA
         st.divider()
         st.markdown("### 📥 Descargar reporte")
         output = io.BytesIO()
@@ -456,7 +406,6 @@ Exceso: {lista_exceso[:200]}""")
                     "ROI %": p["roi"] if p["roi"]>0 else "-",
                     "Ganancia potencial COP": p["ganancia_potencial"] if p["ganancia_potencial"]>0 else "-",
                     "Proveedor": p["proveedor"]} for p in urgentes]).to_excel(writer, sheet_name="🚨 Urgentes", index=False)
-
             plan = [{"Semana": 1, "Producto": p["nombre"], "ABC": p["abc"], "Uds": p["uds"],
                      "Costo COP": int(p["costo_total"]) if p["costo_total"]>0 else "-",
                      "Proveedor": p["proveedor"]} for p in urgentes]
@@ -465,12 +414,10 @@ Exceso: {lista_exceso[:200]}""")
                       "Proveedor": p["proveedor"]} for p in proximos]
             if plan:
                 pd.DataFrame(plan).to_excel(writer, sheet_name="📅 Plan compras", index=False)
-
             if exceso:
                 pd.DataFrame([{"Producto": p["nombre"], "ABC": p["abc"], "Stock": p["stock"],
                     "Ventas/sem": p["ventas"], "Uds de más": p["exceso_uds"],
                     "Capital inmovilizado COP": int(p["valor"]) if p["valor"]>0 else "-"} for p in exceso]).to_excel(writer, sheet_name="💰 Capital atrapado", index=False)
-
             ranking = sorted(urgentes + proximos, key=lambda x: ({"A":0,"B":1,"C":2}[x["abc"]], -x["roi"]))
             if ranking and tiene_precios:
                 pd.DataFrame([{"Prioridad": i+1, "Producto": p["nombre"], "ABC": p["abc"],
@@ -478,7 +425,6 @@ Exceso: {lista_exceso[:200]}""")
                     "Inversión COP": int(p["costo_total"]),
                     "Ganancia potencial COP": p["ganancia_potencial"],
                     "Proveedor": p["proveedor"]} for i, p in enumerate(ranking)]).to_excel(writer, sheet_name="📈 Ranking ROI", index=False)
-
             abc_data = [{"Producto": n, "ABC": c,
                 "Ventas/sem": int(df[df["nombre"]==n]["ventas"].iloc[0]),
                 "Precio venta COP": int(df[df["nombre"]==n]["precio_venta"].iloc[0]),
@@ -486,7 +432,6 @@ Exceso: {lista_exceso[:200]}""")
                 for n, c in abc_map.items() if len(df[df["nombre"]==n]) > 0]
             if abc_data:
                 pd.DataFrame(abc_data).sort_values("Ingreso semanal COP", ascending=False).to_excel(writer, sheet_name="📊 ABC", index=False)
-
             pd.DataFrame([
                 {"Concepto": "Total urgentes Semana 1", "Valor COP": total_sem1},
                 {"Concepto": "Total Semana 2", "Valor COP": total_sem2},
@@ -504,4 +449,3 @@ Exceso: {lista_exceso[:200]}""")
 
 else:
     st.info("👆 Sube tu archivo Excel para comenzar")
-       
