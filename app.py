@@ -229,13 +229,18 @@ Capital atrapado: {lista_exceso[:150]}""")
             intro_exceso = pedir_ia(f"""Eres StokIA. Tono cercano, directo, segunda persona. Máximo 2 oraciones.
 Explica brevemente qué hacer con el exceso para liberar capital. Sin listas ni números.
 Productos en exceso: {lista_exceso}""")
-            consejo = pedir_ia(f"""Eres StokIA. Tono cercano, directo, segunda persona.
-Una sugerencia concreta y accionable para mejorar ventas o flujo de caja esta semana.
-Específica para este inventario. Máximo 2 oraciones.
-Urgentes: {lista_urgentes[:200]}
-Exceso: {lista_exceso[:200]}""")
+            consejo = pedir_ia(f"""Eres StokIA. Tono cercano, directo, segunda persona. Máximo 3 oraciones.
+Tu objetivo es dar UN consejo accionable y específico que el dueño del negocio pueda ejecutar HOY.
+El consejo debe terminar con una acción concreta — una llamada, una oferta, un movimiento de caja, o una decisión de compra específica.
+Usa los nombres reales de los productos del inventario. No generalices.
+Contexto del negocio:
+- Productos urgentes (sin stock o por agotarse): {lista_urgentes[:300]}
+- Capital atrapado en exceso: {lista_exceso[:300]}
+- Inversión total urgente: ${total_sem1:,} COP
+Genera un consejo que conecte el problema más crítico con una acción inmediata y medible.""")
 
-        fecha = datetime.now().strftime("%d/%m/%Y %H:%M")
+        from zoneinfo import ZoneInfo
+        fecha = datetime.now(ZoneInfo("America/Bogota")).strftime("%d/%m/%Y %H:%M")
         st.markdown(f"---\n### 📊 Reporte StokIA — {fecha}")
 
         col1, col2, col3 = st.columns(3)
