@@ -107,7 +107,7 @@ if archivo is not None:
             precio_compra = float(row[col_pc] if col_pc else 0)
             proveedor     = str(row[col_prov] if col_prov else "Sin proveedor")
             lead_time_raw = float(row[col_lt]) if col_lt and pd.notna(row[col_lt]) else 0
-            lead_time     = int(lead_time_raw) if not math.isnan(lead_time_raw) else 3
+            lead_time     = int(lead_time_raw) if not math.isnan(lead_time_raw) else 0
             stock_min_raw = float(row[col_sm]) if col_sm and pd.notna(row[col_sm]) else 0
             filas.append({
                 "nombre": nombre, "stock": int(stock), "ventas": ventas,
@@ -139,7 +139,10 @@ if archivo is not None:
 
     if st.button("🔍 Analizar con IA", type="primary", use_container_width=True):
 
-        df_abc = calcular_abc(df[df["ventas"] > 0].copy())
+        if "ventas" not in df.columns or len(df) == 0:
+    st.error("No se pudieron leer los datos del archivo. Verifica que usas la plantilla StokIA correcta.")
+    st.stop()
+df_abc = calcular_abc(df[df["ventas"] > 0].copy())
         abc_map = dict(zip(df_abc["nombre"], df_abc["abc"])) if len(df_abc) > 0 else {}
 
         urgentes, proximos, exceso, normales = [], [], [], []
