@@ -120,6 +120,10 @@ if archivo is not None:
 
     df = pd.DataFrame(filas)
 
+        st.write(f"DEBUG col_stock: {col_stock}")
+        st.write(f"DEBUG col_ventas: {col_ventas}")
+        st.write(f"DEBUG filas: {len(filas)}")
+    
     st.success(f"✅ {len(df)} productos cargados · Plantilla {version}" +
                (" · Análisis avanzado activado ⭐" if tiene_precios else ""))
     with st.expander("Ver inventario completo"):
