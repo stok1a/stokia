@@ -95,7 +95,7 @@ if archivo is not None:
         try:
             nombre        = str(row.get("Nombre del producto", "")).strip()
             if not nombre or nombre.lower() == "nan": continue
-            stock         = float(row.get("Stock actual", 0) or 0)
+            stock         = float(row[col_stock] if col_stock else 0)
             ventas        = float(row[col_ventas] if col_ventas else 0)
             precio_venta  = float(row[col_pv] if col_pv else 0)
             precio_compra = float(row[col_pc] if col_pc else 0)
