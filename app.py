@@ -17,11 +17,6 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-password = st.text_input("Ingresa tu contraseña de acceso", type="password")
-if password != st.secrets["APP_PASSWORD"]:
-    st.warning("Contraseña incorrecta. Contacta a edgar@stokia.app para acceder.")
-    st.stop()
-
 archivo = st.file_uploader("Sube tu inventario en Excel", type=["xlsx"], help="Compatible con plantilla StokIA V1 y V2")
 
 def pedir_ia(prompt):
