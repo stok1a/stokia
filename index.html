@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>StokIA — Convierte tu experiencia en decisiones rentables</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --azul: #1F4E79;
+    --azul-medio: #2E75B6;
+    --azul-claro: #BDD7EE;
+    --verde: #5BD6A0;
+    --blanco: #FAFAF8;
+    --gris: #6B7280;
+    --negro: #0F172A;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--blanco);
+    color: var(--negro);
+    overflow-x: hidden;
+  }
+
+  /* ── NAV ── */
+  nav {
+    position: fixed; top: 0; width: 100%; z-index: 100;
+    padding: 18px 48px;
+    display: flex; justify-content: space-between; align-items: center;
+    background: rgba(250,250,248,0.92);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(31,78,121,0.08);
+  }
+
+  .nav-logo {
+    font-family: 'DM Serif Display', serif;
+    font-size: 22px;
+    color: var(--azul);
+    letter-spacing: -0.5px;
+  }
+
+  .nav-logo span { color: var(--azul-medio); }
+
+  .nav-cta {
+    background: var(--azul);
+    color: white;
+    padding: 10px 24px;
+    border-radius: 100px;
+    font-size: 14px;
+    font-weight: 500;
+    text-decoration: none;
+    transition: all 0.2s;
+    letter-spacing: 0.2px;
+  }
+
+  .nav-cta:hover { background: var(--azul-medio); transform: translateY(-1px); }
+
+  /* ── HERO ── */
+  .hero {
+    min-height: 100vh;
+    display: flex; align-items: center;
+    padding: 120px 48px 80px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .hero-bg {
+    position: absolute; inset: 0;
+    background:
+      radial-gradient(ellipse 80% 60% at 70% 40%, rgba(46,117,182,0.08) 0%, transparent 60%),
+      radial-gradient(ellipse 40% 40% at 20% 80%, rgba(91,214,160,0.06) 0%, transparent 50%);
+  }
+
+  .hero-grid {
+    position: absolute; inset: 0; opacity: 0.03;
+    background-image:
+      linear-gradient(var(--azul) 1px, transparent 1px),
+      linear-gradient(90deg, var(--azul) 1px, transparent 1px);
+    background-size: 48px 48px;
+  }
+
+  .hero-content {
+    position: relative; z-index: 1;
+    max-width: 680px;
+  }
+
+  .hero-badge {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: rgba(31,78,121,0.06);
+    border: 1px solid rgba(31,78,121,0.12);
+    padding: 6px 16px;
+    border-radius: 100px;
+    font-size: 13px;
+    color: var(--azul-medio);
+    margin-bottom: 32px;
+    animation: fadeUp 0.6s ease both;
+  }
+
+  .badge-dot {
+    width: 6px; height: 6px;
+    background: var(--verde);
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.6; transform: scale(0.8); }
+  }
+
+  h1 {
+    font-family: 'DM Serif Display', serif;
+    font-size: clamp(42px, 6vw, 68px);
+    line-height: 1.06;
+    letter-spacing: -1.5px;
+    color: var(--azul);
+    margin-bottom: 28px;
+    animation: fadeUp 0.6s 0.1s ease both;
+  }
+
+  h1 em {
+    font-style: italic;
+    color: var(--azul-medio);
+  }
+
+  .hero-sub {
+    font-size: 19px;
+    line-height: 1.65;
+    color: var(--gris);
+    font-weight: 300;
+    max-width: 520px;
+    margin-bottom: 48px;
+    animation: fadeUp 0.6s 0.2s ease both;
+  }
+
+  .hero-actions {
+    display: flex; gap: 16px; flex-wrap: wrap;
+    animation: fadeUp 0.6s 0.3s ease both;
+  }
+
+  .btn-primary {
+    background: var(--azul);
+    color: white;
+    padding: 16px 36px;
+    border-radius: 100px;
+    font-size: 16px;
+    font-weight: 500;
+    text-decoration: none;
+    transition: all 0.25s;
+    letter-spacing: 0.2px;
+  }
+
+  .btn-primary:hover {
+    background: var(--azul-medio);
+    transform: translateY(-2px);
+    box-shadow: 0 12px 32px rgba(31,78,121,0.25);
+  }
+
+  .btn-secondary {
+    color: var(--azul);
+    padding: 16px 28px;
+    border-radius: 100px;
+    font-size: 16px;
+    font-weight: 400;
+    text-decoration: none;
+    border: 1.5px solid rgba(31,78,121,0.2);
+    transition: all 0.25s;
+  }
+
+  .btn-secondary:hover {
+    border-color: var(--azul);
+    background: rgba(31,78,121,0.04);
+  }
+
+  .hero-visual {
+    position: absolute;
+    right: -40px; top: 50%;
+    transform: translateY(-50%);
+    width: 460px;
+    animation: fadeUp 0.8s 0.4s ease both;
+  }
+
+  /* ── TRUST BAR ── */
+  .trust {
+    padding: 32px 48px;
+    border-top: 1px solid rgba(31,78,121,0.08);
+    border-bottom: 1px solid rgba(31,78,121,0.08);
+    display: flex; align-items: center; gap: 48px;
+    flex-wrap: wrap;
+  }
+
+  .trust-label {
+    font-size: 12px;
+    color: var(--gris);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+
+  .trust-items {
+    display: flex; gap: 40px; flex-wrap: wrap;
+  }
+
+  .trust-item {
+    display: flex; align-items: center; gap: 10px;
+    font-size: 14px; color: var(--azul); font-weight: 500;
+  }
+
+  .trust-icon {
+    width: 32px; height: 32px;
+    background: rgba(31,78,121,0.06);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+  }
+
+  /* ── SECCIÓN: PARA QUIÉN ── */
+  section { padding: 96px 48px; }
+
+  .section-label {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: var(--azul-medio);
+    font-weight: 500;
+    margin-bottom: 16px;
+  }
+
+  h2 {
+    font-family: 'DM Serif Display', serif;
+    font-size: clamp(32px, 4vw, 48px);
+    letter-spacing: -1px;
+    color: var(--azul);
+    line-height: 1.1;
+    margin-bottom: 20px;
+  }
+
+  .section-sub {
+    font-size: 17px;
+    color: var(--gris);
+    font-weight: 300;
+    line-height: 1.7;
+    max-width: 520px;
+    margin-bottom: 56px;
+  }
+
+  .negocios-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 16px;
+    max-width: 900px;
+  }
+
+  .negocio-card {
+    background: white;
+    border: 1px solid rgba(31,78,121,0.1);
+    border-radius: 16px;
+    padding: 24px 20px;
+    transition: all 0.25s;
+  }
+
+  .negocio-card:hover {
+    border-color: var(--azul-medio);
+    transform: translateY(-3px);
+    box-shadow: 0 16px 40px rgba(31,78,121,0.1);
+  }
+
+  .negocio-icon { font-size: 28px; margin-bottom: 12px; }
+
+  .negocio-nombre {
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--azul);
+    margin-bottom: 6px;
+  }
+
+  .negocio-desc {
+    font-size: 13px;
+    color: var(--gris);
+    line-height: 1.5;
+  }
+
+  /* ── SECCIÓN: QUÉ HACE ── */
+  .features { background: var(--azul); color: white; }
+
+  .features h2 { color: white; }
+  .features .section-label { color: var(--azul-claro); }
+  .features .section-sub { color: rgba(255,255,255,0.65); }
+
+  .features-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 2px;
+    margin-top: 56px;
+  }
+
+  .feature-item {
+    background: rgba(255,255,255,0.04);
+    padding: 36px 32px;
+    border: 1px solid rgba(255,255,255,0.08);
+    transition: background 0.2s;
+  }
+
+  .feature-item:hover { background: rgba(255,255,255,0.08); }
+
+  .feature-num {
+    font-family: 'DM Serif Display', serif;
+    font-size: 48px;
+    color: rgba(255,255,255,0.1);
+    line-height: 1;
+    margin-bottom: 16px;
+  }
+
+  .feature-title {
+    font-size: 17px;
+    font-weight: 500;
+    color: white;
+    margin-bottom: 10px;
+  }
+
+  .feature-desc {
+    font-size: 14px;
+    color: rgba(255,255,255,0.6);
+    line-height: 1.65;
+    font-weight: 300;
+  }
+
+  .feature-tag {
+    display: inline-block;
+    margin-top: 16px;
+    background: rgba(91,214,160,0.15);
+    color: var(--verde);
+    padding: 4px 12px;
+    border-radius: 100px;
+    font-size: 12px;
+    font-weight: 500;
+  }
+
+  /* ── SECCIÓN: CÓMO FUNCIONA ── */
+  .pasos-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 40px;
+    margin-top: 56px;
+    max-width: 900px;
+  }
+
+  .paso {
+    position: relative;
+    padding-left: 24px;
+    border-left: 2px solid rgba(31,78,121,0.12);
+  }
+
+  .paso-num {
+    font-family: 'DM Serif Display', serif;
+    font-size: 13px;
+    color: var(--azul-medio);
+    letter-spacing: 1px;
+    margin-bottom: 12px;
+  }
+
+  .paso-title {
+    font-size: 17px;
+    font-weight: 500;
+    color: var(--azul);
+    margin-bottom: 10px;
+  }
+
+  .paso-desc {
+    font-size: 14px;
+    color: var(--gris);
+    line-height: 1.65;
+    font-weight: 300;
+  }
+
+  /* ── SECCIÓN: DIFERENCIAL ── */
+  .diferencial {
+    background: #F0F6FF;
+  }
+
+  .diferencial-inner {
+    max-width: 700px;
+    margin: 0 auto;
+    text-align: center;
+  }
+
+  blockquote {
+    font-family: 'DM Serif Display', serif;
+    font-size: clamp(24px, 3vw, 36px);
+    color: var(--azul);
+    line-height: 1.35;
+    letter-spacing: -0.5px;
+    margin: 0 0 32px;
+    font-style: italic;
+  }
+
+  .diferencial-sub {
+    font-size: 16px;
+    color: var(--gris);
+    line-height: 1.7;
+    font-weight: 300;
+  }
+
+  /* ── CTA FINAL ── */
+  .cta-final {
+    background: var(--azul);
+    text-align: center;
+    padding: 96px 48px;
+  }
+
+  .cta-final h2 { color: white; margin-bottom: 16px; }
+
+  .cta-final p {
+    font-size: 17px;
+    color: rgba(255,255,255,0.65);
+    font-weight: 300;
+    margin-bottom: 40px;
+    max-width: 480px;
+    margin-left: auto; margin-right: auto;
+    line-height: 1.65;
+  }
+
+  .cta-pills {
+    display: flex; justify-content: center; gap: 12px;
+    flex-wrap: wrap; margin-top: 32px;
+  }
+
+  .pill {
+    background: rgba(255,255,255,0.1);
+    color: rgba(255,255,255,0.8);
+    padding: 8px 20px;
+    border-radius: 100px;
+    font-size: 13px;
+    display: flex; align-items: center; gap: 6px;
+  }
+
+  .pill-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--verde); }
+
+  /* ── FOOTER ── */
+  footer {
+    padding: 32px 48px;
+    border-top: 1px solid rgba(31,78,121,0.08);
+    display: flex; justify-content: space-between; align-items: center;
+    flex-wrap: wrap; gap: 16px;
+  }
+
+  .footer-logo {
+    font-family: 'DM Serif Display', serif;
+    font-size: 18px;
+    color: var(--azul);
+  }
+
+  .footer-logo span { color: var(--azul-medio); }
+
+  .footer-copy {
+    font-size: 13px;
+    color: var(--gris);
+  }
+
+  .footer-link {
+    font-size: 13px;
+    color: var(--azul-medio);
+    text-decoration: none;
+  }
+
+  /* ── ANIMACIONES ── */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(24px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .reveal {
+    opacity: 0;
+    transform: translateY(24px);
+    transition: opacity 0.6s ease, transform 0.6s ease;
+  }
+
+  .reveal.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 768px) {
+    nav { padding: 16px 24px; }
+    .hero { padding: 100px 24px 60px; }
+    .hero-visual { display: none; }
+    section { padding: 64px 24px; }
+    .trust { padding: 24px; gap: 24px; }
+    footer { padding: 24px; }
+    .cta-final { padding: 64px 24px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-logo">Stok<span>IA</span></div>
+  <a href="https://stokia-app.streamlit.app" class="nav-cta">Probar gratis →</a>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-bg"></div>
+  <div class="hero-grid"></div>
+  <div class="hero-content">
+    <div class="hero-badge">
+      <span class="badge-dot"></span>
+      Inteligencia Artificial para pequeños negocios
+    </div>
+    <h1>Convierte tu experiencia en <em>decisiones rentables</em></h1>
+    <p class="hero-sub">
+      StokIA analiza tu inventario con IA y te dice exactamente qué comprar esta semana,
+      cuáles son tus productos más rentables y cuánto capital tienes atrapado.
+    </p>
+    <div class="hero-actions">
+      <a href="https://stokia-app.streamlit.app" class="btn-primary">Probar gratis ahora</a>
+      <a href="#como-funciona" class="btn-secondary">¿Cómo funciona?</a>
+    </div>
+  </div>
+</section>
+
+<!-- TRUST BAR -->
+<div class="trust">
+  <span class="trust-label">Diseñado para</span>
+  <div class="trust-items">
+    <div class="trust-item"><div class="trust-icon">🔧</div> Ferreterías</div>
+    <div class="trust-item"><div class="trust-icon">💊</div> Farmacias</div>
+    <div class="trust-item"><div class="trust-icon">🌿</div> Naturistas</div>
+    <div class="trust-item"><div class="trust-icon">📦</div> Distribuidoras</div>
+    <div class="trust-item"><div class="trust-icon">🛒</div> Minimarkets</div>
+  </div>
+</div>
+
+<!-- QUÉ HACE -->
+<section class="features" id="que-hace">
+  <div class="section-label">Lo que hace StokIA</div>
+  <h2>Tu socio de compras inteligente</h2>
+  <p class="section-sub">
+    No solo te dice cuánto tienes — te dice qué hacer con eso.
+  </p>
+  <div class="features-grid">
+    <div class="feature-item">
+      <div class="feature-num">01</div>
+      <div class="feature-title">Alertas urgentes</div>
+      <div class="feature-desc">Detecta los productos que se van a agotar esta semana y calcula exactamente cuántas unidades pedir.</div>
+      <span class="feature-tag">Compra hoy</span>
+    </div>
+    <div class="feature-item">
+      <div class="feature-num">02</div>
+      <div class="feature-title">Análisis ABC</div>
+      <div class="feature-desc">Clasifica automáticamente todos tus productos. Descubre cuáles generan el 80% de tus ingresos — y cuáles no valen la pena.</div>
+      <span class="feature-tag">Conoce tu negocio</span>
+    </div>
+    <div class="feature-item">
+      <div class="feature-num">03</div>
+      <div class="feature-title">Modo presupuesto</div>
+      <div class="feature-desc">¿Tienes $300.000 hoy? StokIA te dice qué comprar primero para proteger tus ventas más importantes.</div>
+      <span class="feature-tag">Optimiza tu caja</span>
+    </div>
+    <div class="feature-item">
+      <div class="feature-num">04</div>
+      <div class="feature-title">Capital atrapado</div>
+      <div class="feature-desc">Identifica qué productos tienen exceso de stock y cuánto dinero tienes inmovilizado en inventario que no rota.</div>
+      <span class="feature-tag">Libera capital</span>
+    </div>
+    <div class="feature-item">
+      <div class="feature-num">05</div>
+      <div class="feature-title">Ranking de rentabilidad</div>
+      <div class="feature-desc">Ordena tus productos por ROI. Cuando el presupuesto no alcanza, sabes exactamente cuáles comprar primero.</div>
+      <span class="feature-tag">Maximiza ganancias</span>
+    </div>
+    <div class="feature-item">
+      <div class="feature-num">06</div>
+      <div class="feature-title">Plan de compras 3 semanas</div>
+      <div class="feature-desc">Un plan claro para las próximas 3 semanas. Para que no gastes todo de una vez y manejes mejor tu capital de trabajo.</div>
+      <span class="feature-tag">Planea con anticipación</span>
+    </div>
+  </div>
+</section>
+
+<!-- CÓMO FUNCIONA -->
+<section id="como-funciona">
+  <div class="reveal">
+    <div class="section-label">Proceso</div>
+    <h2>En 3 pasos simples</h2>
+    <p class="section-sub">Sin instalaciones, sin capacitaciones, sin complicaciones.</p>
+  </div>
+  <div class="pasos-grid">
+    <div class="paso reveal">
+      <div class="paso-num">PASO 01</div>
+      <div class="paso-title">Llena la plantilla Excel</div>
+      <div class="paso-desc">Descarga nuestra plantilla y anota tus productos, cuánto tienes y cuánto vendes por semana. Solo los datos que recuerdas de memoria — empieza con 20 o 30 productos.</div>
+    </div>
+    <div class="paso reveal">
+      <div class="paso-num">PASO 02</div>
+      <div class="paso-title">Sube el archivo</div>
+      <div class="paso-desc">Entra a stokia-app.streamlit.app, sube tu Excel y haz clic en Analizar. En segundos la IA procesa todo tu inventario.</div>
+    </div>
+    <div class="paso reveal">
+      <div class="paso-num">PASO 03</div>
+      <div class="paso-title">Actúa sobre el reporte</div>
+      <div class="paso-desc">Recibe un reporte completo con alertas urgentes, gráficos ABC, ranking de rentabilidad y un consejo accionable para esta semana. Descárgalo en Excel.</div>
+    </div>
+  </div>
+</section>
+
+<!-- DIFERENCIAL -->
+<section class="diferencial">
+  <div class="diferencial-inner reveal">
+    <div class="section-label" style="text-align:center">Nuestra diferencia</div>
+    <blockquote>"Siigo te dice cuánto tienes. StokIA te dice qué hacer con eso."</blockquote>
+    <p class="diferencial-sub">
+      Los sistemas de inventario registran el pasado. StokIA te ayuda a tomar mejores decisiones hoy —
+      con Inteligencia Artificial entrenada para entender la realidad de los pequeños negocios en Colombia.
+    </p>
+  </div>
+</section>
+
+<!-- CTA FINAL -->
+<section class="cta-final">
+  <div class="reveal">
+    <h2>Pruébalo gratis hoy</h2>
+    <p>El análisis es completamente gratis. Tus datos son 100% confidenciales — nadie más los ve.</p>
+    <a href="https://stokia-app.streamlit.app" class="btn-primary" style="font-size:17px; padding:18px 44px;">
+      Empezar ahora →
+    </a>
+    <div class="cta-pills">
+      <div class="pill"><span class="pill-dot"></span> Gratis para probar</div>
+      <div class="pill"><span class="pill-dot"></span> Datos confidenciales</div>
+      <div class="pill"><span class="pill-dot"></span> Inteligencia Artificial</div>
+      <div class="pill"><span class="pill-dot"></span> Sin instalaciones</div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-logo">Stok<span>IA</span></div>
+  <span class="footer-copy">© 2026 StokIA · Medellín, Colombia</span>
+  <a href="mailto:edgar@stokia.app" class="footer-link">edgar@stokia.app</a>
+</footer>
+
+<script>
+  // Reveal on scroll
+  const reveals = document.querySelectorAll('.reveal');
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach((entry, i) => {
+      if (entry.isIntersecting) {
+        setTimeout(() => entry.target.classList.add('visible'), i * 80);
+      }
+    });
+  }, { threshold: 0.1 });
+  reveals.forEach(el => observer.observe(el));
+</script>
+</body>
+</html>
